@@ -2,7 +2,18 @@
 
 Une usine à contenu 100% autonome fonctionnant sous n8n et Make.com. Ce système génère, monte et publie automatiquement des vidéos courtes (YouTube Shorts, Facebook Reels) avec une qualité narrative et visuelle optimisée pour la viralité.
 
-![Workflow n8n](images/workflow.png)
+## 📺 Exemples de vidéos générées par ce système
+Ces vidéos ont été créées de A à Z (script, voix, montage, publication) par le workflow pour la chaîne *Esprit d'Acier* :
+- [▶️ Voir le Short sur YouTube](https://youtube.com/shorts/S-7Ma3NJU14?si=KJR4WSzbA5QsRs1W)
+- [▶️ Voir le Reel sur Facebook](https://www.facebook.com/share/r/1M4D9gKKnA/)
+
+## Aperçu des Workflows
+
+### 1. L'orchestrateur principal (n8n)
+![Workflow n8n](images/n8n.png)
+
+### 2. Le relais de publication Facebook (Make.com)
+![Workflow Make](images/fb.png)
 
 ## Pourquoi ce projet ?
 La création de vidéos générées par IA souffre souvent d'un manque d'émotion et de rétention. Ce projet résout ce problème grâce à un prompt d'ingénierie inversée de la psychologie humaine (Dopamine retention, Storytelling). 
@@ -41,11 +52,14 @@ graph TD
 ## Démarrage Rapide
 
 1. Clonez ce dépôt.
-2. Créez un fichier `.env` basé sur `.env.example`.
+2. Créez un fichier `.env` basé sur `.env.exemple`.
 3. Importez `n8n-workflow.json` dans votre instance n8n.
 4. Importez `make-blueprint.json` dans votre compte Make.com.
 5. Connectez vos credentials dans n8n (Google, YouTube) et Make (Facebook Pages).
 6. Activez le scénario Make pour obtenir l'URL du Webhook, et collez-la dans n8n.
 7. Activez n8n !
 
-Consultez le [Guide d'installation complet](docs/installation.md) et la [Roadmap d'amélioration](docs/improvements.md).
+Consultez le [Guide d'installation complet](documents/installation.md) et la [Roadmap d'amélioration](documents/improvements.md).
+
+---
+Licence : MIT

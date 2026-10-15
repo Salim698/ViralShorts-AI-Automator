@@ -1,0 +1,725 @@
+{
+  "name": "AutoShort Factory V3 - Clean",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        1488
+      ],
+      "id": "trigger-auto-shorts",
+      "name": "Schedule (3x/jour)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"Tu es le meilleur stratège mondial de vidéos VIRAL TikTok, Instagram Reels, Facebook Reels et YouTube Shorts... [PROMPT TRONQUÉ POUR LISIBILITÉ, CONSERVER LE PROMPT ORIGINAL DANS L'UTILISATION RÉELLE] ... Retourner exactement ces champs JSON : title, script, hook, hook_safe, emotion, keywords, segments, hashtags, youtube_title, youtube_description, youtube_tags\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        320,
+        1488
+      ],
+      "id": "0eee003e-0c6b-4b46-9898-27e132c5022f",
+      "name": "Gemini Génère Script",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const txt = $input.first().json.candidates[0].content.parts[0].text;\n\nconst clean = txt\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .replace(/\\n/g, ' ')\n  .trim();\n\nlet parsed;\n\ntry {\n  parsed = JSON.parse(clean);\n} catch (e) {\n  const match = clean.match(/\\{[\\s\\S]*\\}/);\n\n  if (match) {\n    try {\n      parsed = JSON.parse(match[0]);\n    } catch {\n      throw new Error('Gemini JSON invalide: ' + clean.substring(0, 300));\n    }\n  } else {\n    throw new Error('Aucun JSON trouvé: ' + clean.substring(0, 300));\n  }\n}\n\nreturn [\n  {\n    json: parsed\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        1520
+      ],
+      "id": "63c6aa53-0bec-40ee-81c8-82a4262064bd",
+      "name": "Parser Gemini",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $env.ELEVENLABS_VOICE_ID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $env.ELEVENLABS_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "audio/mpeg"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": {{ JSON.stringify($json.script) }},\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"voice_settings\": {\n    \"stability\": 0.24,\n    \"similarity_boost\": 0.85,\n    \"style\": 0.82,\n    \"use_speaker_boost\": true\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "audio"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        704,
+        1184
+      ],
+      "id": "4397daea-3ef1-456b-9a1d-e9fcc72ad315",
+      "name": "ElevenLabs Voix IA",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloudconvert.com/v2/jobs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.CLOUDCONVERT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.cloudconvert_payload) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2176,
+        1584
+      ],
+      "id": "5f6083c7-74ae-469f-b142-3e1d8598b932",
+      "name": "CloudConvert Créer Job",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const job = $json.data;\nif (!job || !job.id) {\n  throw new Error('CloudConvert n\\'a pas créé le job. Réponse: ' + JSON.stringify($json).substring(0, 300));\n}\n\nconst videoData =$('Extract URL vidéo SEGMENTS').first().json;\n\nreturn [{\n  json: {\n    job_id: job.id,\n    status: job.status,\n    title: videoData.title,\n    hashtags: videoData.hashtags\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        1584
+      ],
+      "id": "b3bcaa10-1a80-419d-846b-2325f5ab0174",
+      "name": "Extraire Job ID",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "=https://api.cloudconvert.com/v2/jobs/{{$json.job_id}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.CLOUDCONVERT_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3008,
+        1552
+      ],
+      "id": "97b817e8-ef25-414f-8928-4a5ef38420b8",
+      "name": "Vérifier Statut Job",
+      "executeOnce": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const job = $json.data;\n\nif (!job) {\n  throw new Error('Réponse CloudConvert invalide: ' + JSON.stringify($json).substring(0, 200));\n}\n\nif (job.status === 'error') {\n  throw new Error('Erreur CloudConvert: ' + JSON.stringify(job.tasks?.map(t => t.message)).substring(0, 300));\n}\n\nif (job.status !== 'finished') {\n  throw new Error('Job pas encore terminé (statut: ' + job.status + '). Augmente le délai dans le noeud Attendre Rendu.');\n}\n\nconst exportTask = job.tasks?.find(t => t.operation === 'export/url' && t.status === 'finished');\nif (!exportTask \vert{}\vert{} !exportTask.result?.files?.[0]?.url) {\n  throw new Error('Tâche export non trouvée.');\n}\n\nconst prevData = $('Extraire Job ID').first().json;\n\nreturn [{\n  json: {\n    download_url: exportTask.result.files[0].url,\n    filename: exportTask.result.files[0].filename,\n    title: prevData.title,\n    hashtags: prevData.hashtags\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        1568
+      ],
+      "id": "334fea32-f98d-4b00-a58a-45ca778a0f25",
+      "name": "Extraire URL Finale",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "={{$json.download_url}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "video_final"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3488,
+        1120
+      ],
+      "id": "57785c42-fd31-42cb-8cc7-3a87ea482a31",
+      "name": "Télécharger Vidéo Finale",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst binaryBuffer = await this.helpers.getBinaryDataBuffer(0, 'audio');\nconst base64String = binaryBuffer.toString('base64');\nitems[0].json.audio_base64 = base64String;\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        1216
+      ],
+      "id": "1a836acf-3d7f-4258-b028-8dc49d6c9380",
+      "name": "Convertir Audio en Base64",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const emotion = ($('Parser Gemini').first().json.emotion || '').toLowerCase();\n// Fallback links, can be updated in environment or external DB\nconst fallback = [\"https://www.dropbox.com/scl/fi/vmjxl6ib7hgux2d9nofr3/atlasaudio-motivation-on-519559.mp3?rlkey=8myal9cm7rgmp6cnr228dps5x&st=81pf9tpb&dl=1\"];\nconst lienDirect = fallback[0];\n\nconst previousData = $input.first().json;\n\nreturn [{\n  json: {\n    ...previousData,\n    url_musique: lienDirect,\n    emotion_detected: emotion\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        1216
+      ],
+      "id": "3bf2c6ac-f035-452b-bb56-3216ceee2665",
+      "name": "Sélection Musique",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const hook = $('Parser Gemini').first().json.hook;\nconst safeHook = hook.replace(/\\\\/g, '\\\\\\\\').replace(/\"/g, '\\\\\"').replace(/:/g, '\\\\:').replace(/'/g, \"\\\\'\");\nconst previousData = $input.first().json;\n\nreturn [\n  {\n    json: {\n      ...previousData,\n      hook_safe: safeHook\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        1552
+      ],
+      "id": "3c36dabc-4cf8-4018-a4b0-2a6f3e7af315",
+      "name": "Hook Text",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "video_final",
+        "name": "={{ $('Parser Gemini').first().json.title || 'Mon_Short' }}.mp4",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3600,
+        1568
+      ],
+      "id": "1308c0f8-8802-492e-bd72-59822f68277d",
+      "name": "Sauvegarder sur Drive",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Parser Gemini').first().json.youtube_title }}",
+        "regionCode": "FR",
+        "options": {
+          "defaultLanguage": "",
+          "description": "={{ $('Parser Gemini').first().json.youtube_description }}",
+          "notifySubscribers": true,
+          "privacyStatus": "public",
+          "publicStatsViewable": true,
+          "selfDeclaredMadeForKids": false,
+          "tags": "={{ $('Parser Gemini').first().json.youtube_tags.join(', ') }}"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        4016,
+        1568
+      ],
+      "id": "2d85ce62-cbfb-437a-9a64-e49b24a84086",
+      "name": "Upload a video",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Sauvegarder sur Drive').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3808,
+        1120
+      ],
+      "id": "f44b38dd-3be5-4379-adee-88cd688e7407",
+      "name": "Download file"
+    },
+    {
+      "parameters": {
+        "amount": 120
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2752,
+        1584
+      ],
+      "id": "f1b93692-61d1-4af7-8da8-74209a1e0221",
+      "name": "Attendre Rendu (120s)",
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "segments",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        688,
+        1760
+      ],
+      "id": "f0d685a7-ca39-4fa8-a293-d89582363903",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "url": "https://api.pexels.com/videos/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.segments.visual || 'dark cinematic' }}"
+            },
+            {
+              "name": "orientation",
+              "value": "portrait"
+            },
+            {
+              "name": "per_page",
+              "value": "20"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $env.PEXELS_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        992,
+        1760
+      ],
+      "id": "d38d6a68-c8d7-461d-aeca-b718c74ce212",
+      "name": "Pexels visual",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const FALLBACK_VIDEO = \"https://videos.pexels.com/video-files/856953/856953-hd_1920_1080_30fps.mp4\";\n\nfunction getSafeLink(videoObj) {\n  if (!videoObj?.video_files?.length) return FALLBACK_VIDEO;\n  const files = videoObj.video_files;\n  let best = files.find(f => f.width === 1080 && f.height === 1920);\n  if (!best) best = files.find(f => f.height > f.width && f.quality === 'hd');\n  if (!best) best = files.find(f => f.quality === 'hd');\n  if (!best) best = files.find(f => f.link?.includes('.mp4'));\n  return best?.link || FALLBACK_VIDEO;\n}\n\nconst parser = $('Parser Gemini').first().json;\n\nconst segmentVideos = items.map(item => {\n  const videos = item.json.videos || [];\n  const shuffled = [...videos].sort(() => Math.random() - 0.5);\n  const segment = item.json;\n  return {\n    line: segment.line || \"\",\n    visual: segment.visual || \"\",\n    duration: segment.duration || 4,\n    video_url: getSafeLink(shuffled[0])\n  };\n});\n\nreturn [{\n  json: {\n    title: parser.title,\n    script: parser.script,\n    hook: parser.hook,\n    emotion: parser.emotion,\n    hashtags: parser.hashtags,\n    segments: segmentVideos\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        1760
+      ],
+      "id": "068b8af6-8eeb-4d89-a0a3-d5fb16eb751c",
+      "name": "Extract URL vidéo SEGMENTS",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1600,
+        1568
+      ],
+      "id": "c8832406-34d3-4440-be33-610b9992ccc3",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst audioBase64 = data.audio_base64;\nconst urlMusique = data.url_musique;\nconst hookSafe = data.hook_safe;\nconst segments = data.segments;\n\nif (!segments || !audioBase64) throw new Error(\"Erreur Merge.\");\n\nconst tasks = {};\ntasks[\"import-audio\"] = { \"operation\": \"import/base64\", \"file\": audioBase64, \"filename\": \"audio.mp3\" };\ntasks[\"import-music\"] = { \"operation\": \"import/url\", \"url\": urlMusique, \"filename\": \"music.mp3\" };\n\nconst inputTasks = [];\nsegments.forEach((seg, index) => {\n  const taskName = `import-v${index + 1}`;\n  tasks[taskName] = { \"operation\": \"import/url\", \"url\": seg.video_url, \"filename\": `v${index + 1}.mp4` };\n  inputTasks.push(taskName);\n});\n\nlet ffmpegArgs = \"\";\nsegments.forEach((seg, index) => { ffmpegArgs += `-stream_loop 15 -i /input/import-v${index + 1}/v${index + 1}.mp4 `; });\nffmpegArgs += `-i /input/import-audio/audio.mp3 -i /input/import-music/music.mp3 `;\n\nlet filterComplex = \"\";\nlet concatInputs = \"\";\nsegments.forEach((seg, index) => {\n  let duration = seg.duration || 5; \n  if (index === segments.length - 1) duration += 30;\n  filterComplex += `[${index}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=duration=${duration},setpts=PTS-STARTPTS[v${index + 1}];`;\n  concatInputs += `[v${index + 1}]`;\n});\n\nconst audioIndex = segments.length;\nconst musicIndex = segments.length + 1;\nfilterComplex += `[${audioIndex}:a]aresample=44100[voice];[${musicIndex}:a]volume=0.08[bg];[voice][bg]amix=inputs=2:duration=first[audio];${concatInputs}concat=n=${segments.length}:v=1:a=0[video];[video]drawtext=text='${hookSafe}':fontcolor=white:fontsize=60:x=(w-text_w)/2:y=(h*0.10):box=1:boxcolor=black@0.45:boxborderw=20[v]`;\n\nffmpegArgs += `-filter_complex \"${filterComplex}\" -map \"[v]\" -map \"[audio]\" -c:v libx264 -preset fast -crf 22 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest /output/video_finale.mp4`;\n\ntasks[\"merge-av\"] = { \"operation\": \"command\", \"engine\": \"ffmpeg\", \"input\": [...inputTasks, \"import-audio\", \"import-music\"], \"command\": \"ffmpeg\", \"arguments\": ffmpegArgs };\ntasks[\"export\"] = { \"operation\": \"export/url\", \"input\": \"merge-av\", \"inline\": false, \"archive_multiple_files\": false };\n\nreturn [{ json: { cloudconvert_payload: { tasks } } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        1568
+      ],
+      "id": "b3896016-54dd-41ea-aec0-2023b65fffdc",
+      "name": "Préparer Payload CloudConvert"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.MAKE_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "video_url",
+              "value": "={{ $('Extraire URL Finale').first().json.download_url }}"
+            },
+            {
+              "name": "title",
+              "value": "={{ $('Parser Gemini').first().json.title }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $('Parser Gemini').first().json.youtube_description }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3376,
+        1920
+      ],
+      "id": "5f67711e-24b9-47bb-8b88-ec595191e41c",
+      "name": "Envoi vers Make (Facebook)"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule (3x/jour)": {
+      "main": [
+        [
+          {
+            "node": "Gemini Génère Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Génère Script": {
+      "main": [
+        [
+          {
+            "node": "Parser Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser Gemini": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ElevenLabs Voix IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs Voix IA": {
+      "main": [
+        [
+          {
+            "node": "Convertir Audio en Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convertir Audio en Base64": {
+      "main": [
+        [
+          {
+            "node": "Sélection Musique",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sélection Musique": {
+      "main": [
+        [
+          {
+            "node": "Hook Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hook Text": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Pexels visual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pexels visual": {
+      "main": [
+        [
+          {
+            "node": "Extract URL vidéo SEGMENTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract URL vidéo SEGMENTS": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Préparer Payload CloudConvert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer Payload CloudConvert": {
+      "main": [
+        [
+          {
+            "node": "CloudConvert Créer Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CloudConvert Créer Job": {
+      "main": [
+        [
+          {
+            "node": "Extraire Job ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire Job ID": {
+      "main": [
+        [
+          {
+            "node": "Attendre Rendu (120s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attendre Rendu (120s)": {
+      "main": [
+        [
+          {
+            "node": "Vérifier Statut Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier Statut Job": {
+      "main": [
+        [
+          {
+            "node": "Extraire URL Finale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire URL Finale": {
+      "main": [
+        [
+          {
+            "node": "Télécharger Vidéo Finale",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Envoi vers Make (Facebook)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Télécharger Vidéo Finale": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarder sur Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sauvegarder sur Drive": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "meta": {},
+  "tags": []
+}

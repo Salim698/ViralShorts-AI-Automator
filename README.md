@@ -1,4 +1,4 @@
-# ViralShorts AI Automator 🚀
+# ViralShorts AI Automator 
 
 Une usine à contenu **100% autonome et gratuite** fonctionnant sous n8n et Make.com. Ce système génère, monte et publie des vidéos courtes (YouTube Shorts, Facebook Reels) avec une qualité narrative et visuelle conçue pour exploser la rétention et l'engagement.
 
@@ -10,7 +10,7 @@ Ces vidéos ont été pensées, écrites, montées et publiées **de A à Z par 
 - [▶️ Voir le résultat sur YouTube Shorts](https://youtube.com/shorts/S-7Ma3NJU14?si=KJR4WSzbA5QsRs1W)
 - [▶️ Voir le résultat sur Facebook Reels](https://www.facebook.com/share/r/1M4D9gKKnA/)
 
-*Jetez un œil aux liens ci-dessus pour constater la fluidité de la voix, la pertinence des plans et le style des sous-titres.*
+*Jetez un œil aux liens ci-dessus pour constater la fluidité de la voix, la pertinence des plans et le style.*
 
 ---
 

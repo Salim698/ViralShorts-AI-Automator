@@ -1,38 +1,51 @@
-# ViralShorts AI Automator
+# ViralShorts AI Automator 🚀
 
-Une usine à contenu 100% autonome fonctionnant sous n8n et Make.com. Ce système génère, monte et publie automatiquement des vidéos courtes (YouTube Shorts, Facebook Reels) avec une qualité narrative et visuelle optimisée pour la viralité.
+Une usine à contenu **100% autonome et gratuite** fonctionnant sous n8n et Make.com. Ce système génère, monte et publie des vidéos courtes (YouTube Shorts, Facebook Reels) avec une qualité narrative et visuelle conçue pour exploser la rétention et l'engagement.
 
-## 📺 Exemples de vidéos générées par ce système
-Ces vidéos ont été créées de A à Z (script, voix, montage, publication) par le workflow pour la chaîne *Esprit d'Acier* :
-- [▶️ Voir le Short sur YouTube](https://youtube.com/shorts/S-7Ma3NJU14?si=KJR4WSzbA5QsRs1W)
-- [▶️ Voir le Reel sur Facebook](https://www.facebook.com/share/r/1M4D9gKKnA/)
+Ne vous fiez pas au mot "automatisé" : **le rendu final est propre, professionnel et indiscernable d'un montage humain.**
 
-## Aperçu des Workflows
+## 📺 La preuve en images (Résultats réels)
+Ces vidéos ont été pensées, écrites, montées et publiées **de A à Z par ce workflow** pour la chaîne *Esprit d'Acier* :
 
-### 1. L'orchestrateur principal (n8n)
+- [▶️ Voir le résultat sur YouTube Shorts](https://youtube.com/shorts/S-7Ma3NJU14?si=KJR4WSzbA5QsRs1W)
+- [▶️ Voir le résultat sur Facebook Reels](https://www.facebook.com/share/r/1M4D9gKKnA/)
+
+*Jetez un œil aux liens ci-dessus pour constater la fluidité de la voix, la pertinence des plans et le style des sous-titres.*
+
+---
+
+## 🧠 Pourquoi ce projet surpasse les bots classiques ?
+
+La majorité des générateurs IA produisent des vidéos génériques et sans émotion. Ce projet résout ce problème à trois niveaux :
+
+1. **Ingénierie Psychologique (Prompting extrême)** : Le cœur du système est un méga-prompt Gemini orienté *Dopamine Retention*, *Storytelling* et *Micro-tensions*. L'IA ne recrache pas des citations Wikipédia, elle écrit des histoires humaines réalistes conçues pour empêcher le swipe.
+2. **Qualité de Montage (FFmpeg)** : Le script n8n génère des commandes FFmpeg complexes exécutées sur CloudConvert. Les vidéos B-roll sont recadrées parfaitement en 9:16, l'audio est mixé avec une musique de fond adaptée à l'émotion du texte, et des sous-titres stylisés (boîte noire, typo lisible) sont incrustés en dur.
+3. **Contournement de l'API Meta** : Publier automatiquement sur Facebook Pages via leur API officielle est un cauchemar (vérification d'entreprise, mode dev, etc.). Ce projet délègue cette partie à un webhook Make.com, rendant le déploiement accessible à n'importe quel utilisateur en 5 minutes.
+
+## ⚙️ Aperçu de l'usine
+
+### 1. Le Cerveau (Orchestrateur n8n)
+Ce workflow gère l'IA, le montage et l'upload YouTube.
 ![Workflow n8n](images/n8n.png)
 
-### 2. Le relais de publication Facebook (Make.com)
+### 2. Le Relais (Webhook Make.com)
+Ce micro-scénario réceptionne la vidéo finale et la pousse nativement sur Facebook.
 ![Workflow Make](images/fb.png)
 
-## Pourquoi ce projet ?
-La création de vidéos générées par IA souffre souvent d'un manque d'émotion et de rétention. Ce projet résout ce problème grâce à un prompt d'ingénierie inversée de la psychologie humaine (Dopamine retention, Storytelling). 
+---
 
-Il contourne également la complexité de l'API Facebook officielle en déléguant la publication à un simple webhook Make.com, rendant le déploiement accessible à tous sans avoir besoin de valider une application développeur Meta.
+## 🛠️ Fonctionnalités techniques
 
-## Fonctionnalités
+- **Pilote Automatique** : Déclencheur Cron n8n paramétré pour tourner 3 fois par jour (modifiable).
+- **Casting Visuel Dynamique** : L'IA Gemini découpe son script en segments et génère des mots-clés en anglais pour chercher les meilleures vidéos d'illustration via l'API Pexels.
+- **Voix Premium** : Utilisation de l'API ElevenLabs pour un rendu vocal ultra-réaliste, sans ton robotique.
+- **Sélection Musicale Intelligente** : La musique de fond change en fonction de l'émotion détectée par l'IA dans le script (mélancolie, motivation, mystère...).
+- **Double Publication Native** : Upload simultané sur YouTube et Facebook avec titres viraux, descriptions optimisées SEO et hashtags générés par l'IA.
+- **Archivage Cloud** : Sauvegarde automatique de la vidéo finale `.mp4` sur Google Drive.
 
-- **Automatisation Totale** : Tourne 3 fois par jour via un cron n8n.
-- **Storytelling IA** : Scénarios ultra-viraux générés par Gemini Flash avec structure psychologique stricte.
-- **Voix Premium** : Synthèse vocale ultra-réaliste via ElevenLabs.
-- **Curation Visuelle** : Recherche automatique de vidéos B-roll dynamiques via l'API Pexels.
-- **Montage Cloud** : Assemblage vidéo + audio + musique de fond + sous-titrage via FFmpeg sur CloudConvert.
-- **Publication Multi-Canale** :
-  - Upload direct sur YouTube (n8n).
-  - Envoi des données vers Make.com pour un upload natif et sans friction sur les Pages Facebook.
-- **Archivage** : Sauvegarde de chaque vidéo montée sur Google Drive.
+---
 
-## Architecture
+## 🏗️ Architecture du flux
 
 ```mermaid
 graph TD
@@ -41,25 +54,9 @@ graph TD
   B --> D[Pexels: Recherche Vidéos B-roll]
   C --> E[Merge Data]
   D --> E
-  E --> F[CloudConvert / FFmpeg: Montage Vidéo]
+  E --> F[CloudConvert / FFmpeg: Montage Vidéo & Sous-titres]
   F --> G[Attente & Vérification Rendu]
   G --> H[Upload Google Drive]
   H --> I[Upload YouTube Shorts]
   G --> J[Webhook vers Make.com]
   J --> K[Upload Facebook Page Reels]
-```
-
-## Démarrage Rapide
-
-1. Clonez ce dépôt.
-2. Créez un fichier `.env` basé sur `.env.exemple`.
-3. Importez `n8n-workflow.json` dans votre instance n8n.
-4. Importez `make-blueprint.json` dans votre compte Make.com.
-5. Connectez vos credentials dans n8n (Google, YouTube) et Make (Facebook Pages).
-6. Activez le scénario Make pour obtenir l'URL du Webhook, et collez-la dans n8n.
-7. Activez n8n !
-
-Consultez le [Guide d'installation complet](documents/installation.md) et la [Roadmap d'amélioration](documents/improvements.md).
-
----
-Licence : MIT
